@@ -78,7 +78,7 @@ void PixelGrid::put(int32_t x, int32_t y, Col color)
 {
 	if (x < 0 || x >= m_Width || y < 0 || y >= m_Height) return;
 
-	const size_t pixelPosition = 4 * (y * m_Width + x);
+	const size_t pixelPosition = 4 * ((m_Height - 1 - y) * m_Width + x);
 
 	m_Pixels[pixelPosition] = color.b;
 	m_Pixels[pixelPosition + 1] = color.g;
@@ -95,7 +95,7 @@ void PixelGrid::putHorizontalLine(int32_t y, int32_t firstX, int32_t lastX, Col 
 
 	for (int32_t x = firstX; x <= lastX; ++x)
 	{
-		const size_t pixelPosition = 4 * (y * m_Width + x);
+		const size_t pixelPosition = 4 * ((m_Height - 1 - y) * m_Width + x);
 
 		m_Pixels[pixelPosition] = color.b;
 		m_Pixels[pixelPosition + 1] = color.g;
@@ -106,7 +106,7 @@ void PixelGrid::putHorizontalLine(int32_t y, int32_t firstX, int32_t lastX, Col 
 
 Col PixelGrid::get(int32_t x, int32_t y)
 {
-	const size_t pixelPosition = 4 * (y * m_Width + x);
+	const size_t pixelPosition = 4 * ((m_Height - 1 - y) * m_Width + x);
 	if (pixelPosition >= m_Pixels.size()) return Colors::White;
 
 	return Col(&m_Pixels.data()[pixelPosition]);

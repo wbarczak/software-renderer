@@ -26,7 +26,7 @@ public:
 	void savePpm(const char* path) const { m_PixelGrid.savePpm(path); }
 	void savePpmUpsideDown(const char* path) const { m_PixelGrid.savePpmUpsideDown(path); };
 
-	void renderModel(const Model& model);
+	void renderModel(const Model& model, float angle = 0.0f);
 
 	PixelGrid& rawPixels() { return m_PixelGrid; }
 	PixelGrid& rawZBuffer() { return m_ZBuffer; }

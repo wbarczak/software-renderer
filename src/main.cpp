@@ -1,48 +1,43 @@
 #include <cstdlib>
 #include <iostream>
-#include <GLFW/glfw3.h>
+#include <numbers>
+#include "MiniFB.h"
 #include "Core.hpp"
 #include "Model.hpp"
 #include "RenderSurface.hpp"
 
 int32_t main()
 {
-	GLFWwindow* window;
-
-	if (!glfwInit()) return -1;
-
 	constexpr int32_t width = 720;
-	constexpr int32_t height = 720;
+	constexpr int32_t height = width;
 
-	window = glfwCreateWindow(width, height, "Software Rastorizer", nullptr, nullptr);
-	
-	if (!window)
-	{
-		glfwTerminate();
-		return -1;
-	}
-
-	glfwMakeContextCurrent(window);
-
-	while (!glfwWindowShouldClose(window))
-	{
-		
-
-		glfwPollEvents();
-	}
-
-	glfwTerminate();
-	return 0;
-
-	RenderSurface framebuffer(width, height);
-
+	RenderSurface buffer(width, height);
 	Model model("diablo3_pose.obj");
 
-	framebuffer.renderModel(model);
+	mfb_window* window = mfb_open_ex("Software Renrerer", width, height, 0);
 
-	auto filename = "framebuffer.ppm";
+	SecClock clock;
+	float angle = 0;
+	do
+	{
+		buffer.clear(Colors::Black);
+		buffer.clearZBuffer();
+
+		angle -= clock.restart() * std::numbers::pi / 6.0f;
+		buffer.renderModel(model, angle);
+
+		int32_t state = mfb_update_ex(window, buffer.rawZBuffer().data(), width, height);
+
+		if (state < 0)
+		{
+			window = nullptr;
+			break;
+		}
+	} while (mfb_wait_sync(window));
+
+	/*auto filename = "framebuffer.ppm";
 	auto bufferFilename = "framebuffer_z_buffer.ppm";
-	framebuffer.savePpmUpsideDown(filename);
-	framebuffer.rawZBuffer().savePpmUpsideDown(bufferFilename);
-	std::cout << "Image saved to '" << filename << "', buffer saved to: '" << bufferFilename << "'.\n";
+	buffer.savePpmUpsideDown(filename);
+	buffer.rawZBuffer().savePpmUpsideDown(bufferFilename);
+	std::cout << "Image saved to '" << filename << "', buffer saved to: '" << bufferFilename << "'.\n";*/
 }

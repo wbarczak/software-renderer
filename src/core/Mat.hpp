@@ -214,6 +214,21 @@ Mat<T, R, C>& operator/=(Mat<T, R, C>& m, const T num)
 	return m;
 }
 
+template<typename T, size_t R, size_t C>
+Vec<T, C> operator*(const Mat<T, R, C>& a, const Vec<T, C>& b) {
+	Vec<T, C> out;
+	for (size_t r = 0; r < R; ++r)
+	{
+		T sum = 0;
+		for (size_t c = 0; c < C; ++c)
+		{
+			sum += a[r][c] * b[c];
+		}
+		out[r] = sum;
+	}
+	return out;
+}
+
 using Mat2 = Mat<float, 2, 2>;
 using Mat3 = Mat<float, 3, 3>;
 using Mat4 = Mat<float, 4, 4>;

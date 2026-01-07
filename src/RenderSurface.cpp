@@ -138,7 +138,17 @@ Vec3f RenderSurface::project(Vec3f vertice)
     );
 }
 
-void RenderSurface::renderModel(const Model& model)
+static Vec3f rotate(Vec3f vertice, float angle = 0)
+{;
+    Mat3 rot{
+        {{std::cos(angle), 0, std::sin(angle)},
+        {0,1,0},
+        {-std::sin(angle), 0, std::cos(angle)}}
+    };
+    return rot * vertice;
+}
+
+void RenderSurface::renderModel(const Model& model, float angle)
 {
     Random rD;
 
@@ -147,9 +157,9 @@ void RenderSurface::renderModel(const Model& model)
     {
         auto face = model.face(i);
         trianglePixelCheck(
-            Vec3i(project(model.vertice(face.x()))),
-            Vec3i(project(model.vertice(face.y()))),
-            Vec3i(project(model.vertice(face.z()))),
+            Vec3i(project(rotate(model.vertice(face.x()), angle))),
+            Vec3i(project(rotate(model.vertice(face.y()), angle))),
+            Vec3i(project(rotate(model.vertice(face.z()), angle))),
             Colors::Red,
             Colors::Green,
             Colors::Blue

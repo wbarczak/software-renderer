@@ -1,8 +1,5 @@
 #pragma once
 
-#include <string>
-#pragma once
-
 // Math
 #include "core/Vec.hpp"
 #include "core/Mat.hpp"
