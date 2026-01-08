@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PixelGrid.hpp"
+#include "ZBuffer.hpp"
 
 class Model;
 
@@ -10,10 +11,9 @@ public:
 
 	RenderSurface(int32_t width, int32_t height, Col backgroundColor = Colors::Black) :
 		m_PixelGrid(width, height, backgroundColor),
-		m_ZBuffer(width, height, Colors::Black) {}
+		m_ZBuffer(width, height) {}
 
-	void clear(Col color = Colors::Black) { m_PixelGrid.clear(color); }
-	void clearZBuffer() { m_ZBuffer.clear(Colors::Black); }
+	void clear(Col color = Colors::Black) { m_PixelGrid.clear(color); m_ZBuffer.clear(); }
 	void put(int32_t x, int32_t y, Col color = Colors::White) { m_PixelGrid.put(x, y, color); }
 	void put(Vec2i pos, Col color = Colors::White) { m_PixelGrid.put(pos.x(), pos.y(), color); }
 
@@ -28,13 +28,13 @@ public:
 
 	void renderModel(const Model& model, float angle = 0.0f);
 
-	PixelGrid& rawPixels() { return m_PixelGrid; }
-	PixelGrid& rawZBuffer() { return m_ZBuffer; }
+	uint8_t* data() { return m_PixelGrid.data(); }
+	PixelGrid visualizeZBuffer() { return m_ZBuffer.getVisual(); }
 
 private:
 
 	Vec3f project(Vec3f vertice);
 
 	PixelGrid m_PixelGrid;
-	PixelGrid m_ZBuffer;
+	ZBuffer m_ZBuffer;
 };

@@ -106,17 +106,8 @@ void RenderSurface::trianglePixelCheck(Vec3i a, Vec3i b, Vec3i c, Col cA, Col cB
 
         if (areaA < 0 || areaB < 0 || areaC < 0) continue;
 
-        const uint8_t depth = a.z() * areaA + b.z() * areaB + c.z() * areaC;
-        if (depth < m_ZBuffer.get(point).r) continue;
-
-        m_ZBuffer.put(
-            point,
-            Col(
-                (a.z() * areaA + b.z() * areaB + c.z() * areaC),
-                (a.z() * areaA + b.z() * areaB + c.z() * areaC),
-                (a.z() * areaA + b.z() * areaB + c.z() * areaC)
-            )
-        );
+        float depth = a.z() * areaA + b.z() * areaB + c.z() * areaC;
+        if (depth < m_ZBuffer.at(point)) continue;
 
         m_PixelGrid.put(
             point,
@@ -126,6 +117,8 @@ void RenderSurface::trianglePixelCheck(Vec3i a, Vec3i b, Vec3i c, Col cA, Col cB
                 (cA.b * areaA + cB.b * areaB + cC.b * areaC)
             )
         );
+
+        m_ZBuffer.at(point) = depth;
     }
 }
 
@@ -136,6 +129,12 @@ Vec3f RenderSurface::project(Vec3f vertice)
         (vertice.y() + 1.0f) * m_PixelGrid.height() / 2.0f,
         (vertice.z() + 1.0f) * 255.0f / 2.0f
     );
+}
+
+static Vec3f perspective(Vec3f vertice)
+{
+    constexpr float c = 3;
+    return vertice / (1.0f - vertice.z() / c);
 }
 
 static Vec3f rotate(Vec3f vertice, float angle = 0)
@@ -157,9 +156,9 @@ void RenderSurface::renderModel(const Model& model, float angle)
     {
         auto face = model.face(i);
         trianglePixelCheck(
-            Vec3i(project(rotate(model.vertice(face.x()), angle))),
-            Vec3i(project(rotate(model.vertice(face.y()), angle))),
-            Vec3i(project(rotate(model.vertice(face.z()), angle))),
+            Vec3i(project(perspective(rotate(model.vertice(face.x()), angle)))),
+            Vec3i(project(perspective(rotate(model.vertice(face.y()), angle)))),
+            Vec3i(project(perspective(rotate(model.vertice(face.z()), angle)))),
             Colors::Red,
             Colors::Green,
             Colors::Blue
