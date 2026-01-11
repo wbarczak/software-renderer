@@ -76,7 +76,7 @@ void RenderSurface::line(glm::vec2 a, glm::vec2 b, Col color)
     }
 }
 
-void RenderSurface::rastorize(glm::vec4 v[3], Col c[3])
+void RenderSurface::rastorize(glm::vec4 v[3], Col c[3], const std::function<Col(glm::vec3, Col[3])>& fragment)
 {
     glm::vec4 normalized[3]{
         v[0] / v[0].w,
@@ -109,11 +109,7 @@ void RenderSurface::rastorize(glm::vec4 v[3], Col c[3])
 
         m_PixelGrid.put(
             x, y,
-            Col(
-                c[0].r * barycentric.x + c[1].r * barycentric.y + c[2].r * barycentric.z,
-                c[0].g * barycentric.x + c[1].g * barycentric.y + c[2].g * barycentric.z,
-                c[0].b * barycentric.x + c[1].b * barycentric.y + c[2].b * barycentric.z
-            )
+            fragment(barycentric, c)
         );
     }
 }
@@ -137,6 +133,6 @@ void RenderSurface::renderModel(const Model& model)
             rD.randomColor()
         };
 
-        rastorize(vertices, colors);
+        rastorize(vertices, colors, model.getFragment());
     }
 }

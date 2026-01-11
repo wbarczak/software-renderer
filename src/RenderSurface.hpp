@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "PixelGrid.hpp"
 #include "ZBuffer.hpp"
 
@@ -20,7 +22,7 @@ public:
 	void put(glm::vec2 pos, Col color = Colors::White) { m_PixelGrid.put(pos.x, pos.y, color); }
 
 	void line(glm::vec2 a, glm::vec2 b, Col color = Colors::White);
-	void rastorize(glm::vec4 v[3], Col c[3]);
+	void rastorize(glm::vec4 v[3], Col c[3], const std::function<Col(glm::vec3, Col[3])>& fragment);
 
 	void savePpm(const char* path) const { m_PixelGrid.savePpm(path); }
 	void savePpmUpsideDown(const char* path) const { m_PixelGrid.savePpmUpsideDown(path); };

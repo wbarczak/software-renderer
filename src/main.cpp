@@ -19,13 +19,20 @@ int32_t main()
 	buffer.setPerspective(glm::length(eye - center));
 	buffer.setViewport(width / 16, height / 16, width * 7 / 8, height * 7 / 8);
 	
-	Model model("diablo3_pose.obj");
+	Model model("diablo3_pose.obj", [](glm::vec3 bar, Col c[3]) -> Col {
+		return Col(
+			c[0].r * bar.x + c[1].r * bar.y + c[2].r * bar.z,
+			c[0].g * bar.x + c[1].g * bar.y + c[2].g * bar.z,
+			c[0].b * bar.x + c[1].b * bar.y + c[2].b * bar.z
+		);
+	});
 
 	mfb_window* window = mfb_open_ex("Software Renderer", width, height, 0);
 
 	float dir = 1.0f;
 	bool showZBuffer = false;
-	mfb_set_keyboard_callback([&dir, &showZBuffer](mfb_window* window, mfb_key key, mfb_key_mod mod, bool isPressed){
+	float speed = 2.0f;
+	mfb_set_keyboard_callback([&dir, &showZBuffer, &speed](mfb_window* window, mfb_key key, mfb_key_mod mod, bool isPressed){
 		switch (key)
 		{
 		case KB_KEY_ESCAPE:
@@ -48,6 +55,21 @@ int32_t main()
 		case KB_KEY_P:
 			showZBuffer = false;
 			return;
+		case KB_KEY_1:
+			speed = 0.5f;
+			return;
+		case KB_KEY_2:
+			speed = 1.0f;
+			return;
+		case KB_KEY_3:
+			speed = 2.0f;
+			return;
+		case KB_KEY_4:
+			speed = 4.0f;
+			return;
+		case KB_KEY_5:
+			speed = 8.0f;
+			return;
 		}
 	}, window);
 
@@ -61,7 +83,8 @@ int32_t main()
 
 		constexpr float secondsPerSpin = 6.0f;
 		float frametime = clock.restart();
-		angle += dir * frametime * std::numbers::pi * 2.0f / secondsPerSpin;
+		angle += dir * speed * frametime * std::numbers::pi * 2.0f / secondsPerSpin;
+		buffer.setLookat(glm::vec3(cosf(angle), 0.0f, sinf(angle)), center, up);
 		buffer.renderModel(model);
 
 		int32_t state;

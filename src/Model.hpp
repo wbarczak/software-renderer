@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <functional>
 
 #include "glm.hpp"
 
@@ -8,7 +9,8 @@ class Model
 {
 public:
 
-	Model(const char* path)
+	Model(const char* path, std::function<Col(glm::vec3, Col[3])>&& fragmentShader) :
+        m_FragmentShader(std::move(fragmentShader))
 	{
 		std::fstream file(path);
 
@@ -47,8 +49,11 @@ public:
     glm::fvec3 vertice(int32_t i) const { return m_Vertices[i]; }
     glm::ivec3 face(int32_t i) const { return m_Faces[i]; }
 
+    const std::function<Col(glm::vec3 barycentric, Col color[3])>& getFragment() const { return m_FragmentShader; }
+
 private:
 
 	std::vector<glm::fvec3> m_Vertices;
 	std::vector<glm::ivec3> m_Faces;
+    std::function<Col(glm::vec3, Col[3])> m_FragmentShader;
 };
