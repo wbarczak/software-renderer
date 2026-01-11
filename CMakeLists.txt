@@ -13,4 +13,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE src)
 add_subdirectory(external/minifb)
 target_link_libraries(Software_Renderer minifb)
 
-target_include_directories(Software_Renderer PRIVATE external/minifb/include)	
+target_include_directories(Software_Renderer PRIVATE
+	external/minifb/include
+	external/glm/glm
+)	

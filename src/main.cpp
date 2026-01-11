@@ -8,10 +8,17 @@
 
 int32_t main()
 {
-	constexpr int32_t width = 720;
-	constexpr int32_t height = width;
+	constexpr int32_t width = 800;
+	constexpr int32_t height = 800;
+	constexpr glm::fvec3 eye{-1.0f, 0.0f, 2.0f};
+	constexpr glm::fvec3 center{0.0f, 0.0f, 0.0f};
+	constexpr glm::fvec3 up{0.0f, 1.0f, 0.0f};
 
 	RenderSurface buffer(width, height);
+	buffer.setLookat(eye, center, up);
+	buffer.setPerspective(glm::length(eye - center));
+	buffer.setViewport(width / 16, height / 16, width * 7 / 8, height * 7 / 8);
+	
 	Model model("diablo3_pose.obj");
 
 	mfb_window* window = mfb_open_ex("Software Renderer", width, height, 0);
@@ -55,7 +62,7 @@ int32_t main()
 		constexpr float secondsPerSpin = 6.0f;
 		float frametime = clock.restart();
 		angle += dir * frametime * std::numbers::pi * 2.0f / secondsPerSpin;
-		buffer.renderModel(model, angle);
+		buffer.renderModel(model);
 
 		int32_t state;
 		if (showZBuffer)

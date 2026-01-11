@@ -9,32 +9,32 @@ class RenderSurface
 {
 public:
 
-	RenderSurface(int32_t width, int32_t height, Col backgroundColor = Colors::Black) :
-		m_PixelGrid(width, height, backgroundColor),
-		m_ZBuffer(width, height) {}
+	RenderSurface(int32_t width, int32_t height, Col backgroundColor = Colors::Black);
+
+	void setViewport(int32_t x, int32_t y, int32_t w, int32_t h);
+	void setPerspective(float f);
+	void setLookat(glm::fvec3 eye, glm::fvec3 center, glm::fvec3 up);
 
 	void clear(Col color = Colors::Black) { m_PixelGrid.clear(color); m_ZBuffer.clear(); }
 	void put(int32_t x, int32_t y, Col color = Colors::White) { m_PixelGrid.put(x, y, color); }
-	void put(Vec2i pos, Col color = Colors::White) { m_PixelGrid.put(pos.x(), pos.y(), color); }
+	void put(glm::vec2 pos, Col color = Colors::White) { m_PixelGrid.put(pos.x, pos.y, color); }
 
-	void line(Vec2i a, Vec2i b, Col color = Colors::White);
-	void triangleFrame(Vec2i a, Vec2i b, Vec2i c, Col color = Colors::White);
-	void triangleScanline(Vec2i a, Vec2i b, Vec2i c, Col color = Colors::White);
-	void trianglePixelCheck(Vec3i a, Vec3i b, Vec3i c, Col cA = Colors::White, Col cB = Colors::White, Col cC = Colors::White);
-	void triangle(Vec3i a, Vec3i b, Vec3i c, Col color = Colors::White) { trianglePixelCheck(a, b, c, color, color, color); }
+	void line(glm::vec2 a, glm::vec2 b, Col color = Colors::White);
+	void rastorize(glm::vec4 v[3], Col c[3]);
 
 	void savePpm(const char* path) const { m_PixelGrid.savePpm(path); }
 	void savePpmUpsideDown(const char* path) const { m_PixelGrid.savePpmUpsideDown(path); };
 
-	void renderModel(const Model& model, float angle = 0.0f);
+	void renderModel(const Model& model);
 
 	uint8_t* data() { return m_PixelGrid.data(); }
 	PixelGrid visualizeZBuffer() { return m_ZBuffer.getVisual(); }
 
 private:
 
-	Vec3f project(Vec3f vertice);
-
 	PixelGrid m_PixelGrid;
 	ZBuffer m_ZBuffer;
+	glm::mat4 m_ModelView;
+	glm::mat4 m_Viewport;
+	glm::mat4 m_Perspective;
 };

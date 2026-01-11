@@ -1,167 +1,136 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include "RenderSurface.hpp"
 #include "Model.hpp"
 
-void RenderSurface::line(Vec2i a, Vec2i b, Col color)
-{
-    // That's Brasenham's line drawing algorithm
+RenderSurface::RenderSurface(int32_t width, int32_t height, Col backgroundColor) :
+    m_PixelGrid(width, height, backgroundColor),
+    m_ZBuffer(width, height) {}
 
-    // First we check if we'll be moving on the x or y axis
-    // If y then we swap x with y on both vectors and later swap them back when drawing in the step where we check for steep again
-    // Effectively it means that if the angle is steep our y is x and x is y
-    bool steep = std::abs(a.x() - b.x()) < std::abs(a.y() - b.y());
+void RenderSurface::setViewport(int32_t x, int32_t y, int32_t w, int32_t h)
+{
+    m_Viewport = {
+        {w / 2.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, h / 2.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f},
+        {x + w / 2.0f, y + h / 2.0f, 0.0f, 1.0f}
+    };
+}
+
+void RenderSurface::setPerspective(float f)
+{
+    m_Perspective = {
+        {1.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f},
+        {0.0f, 0.0f, -1.0f / f, 1.0f}
+    };
+}
+
+void RenderSurface::setLookat(glm::fvec3 eye, glm::fvec3 center, glm::fvec3 up)
+{
+    glm::fvec3 n = glm::normalize(eye - center);
+    glm::fvec3 l = glm::normalize(glm::cross(up, n));
+    glm::fvec3 m = glm::normalize(glm::cross(n, l));
+
+    m_ModelView = glm::mat4({
+        {l.x, m.x, n.x, 0.0f},
+        {l.y, m.y, n.y, 0.0f},
+        {l.z, m.z, n.z, 0.0f},
+        {0.0f, 0.0f, 0.0f, 1.0f}
+    }) * glm::mat4({
+        {1.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f, 0.0f},
+        {-center.x, -center.y, -center.z, 1.0f}
+    });
+}
+
+void RenderSurface::line(glm::vec2 a, glm::vec2 b, Col color)
+{
+    bool steep = std::abs(a.x - b.x) < std::abs(a.y - b.y);
     if (steep)
     {
-        std::swap(a.x(), a.y());
-        std::swap(b.x(), b.y());
+        std::swap(a.x, a.y);
+        std::swap(b.x, b.y);
     }
 
-    // We ensure that we're always drawing from left to right
-    if (a.x() > b.x()) std::swap(a, b);
+    if (a.x > b.x) std::swap(a, b);
 
-    // We set the starting position to the smaller y of the vectors and init error to 0
-    int32_t y = a.y();
+    int32_t y = a.y;
     int32_t error = 0;
-    for (int32_t x = a.x(); x <= b.x(); ++x)
+    for (int32_t x = a.x; x <= b.x; ++x)
     {
-        // Here we step pixel by pixel and fill them in, the branching is explained above
         if (steep) m_PixelGrid.put(y, x, color);
         else m_PixelGrid.put(x, y, color);
 
-        // The error value is here to check if after a move in x we should move in y and if yes then it executes the move
-        error += 2 * std::abs(b.y() - a.y());
-        if (error > b.x() - a.x())
+        error += 2 * std::abs(b.y - a.y);
+        if (error > b.x - a.x)
         {
-            y += b.y() > a.y() ? 1 : -1;
-            error -= 2 * (b.x() - a.x());
+            y += b.y > a.y ? 1 : -1;
+            error -= 2 * (b.x - a.x);
         }
     }
 }
 
-void RenderSurface::triangleFrame(Vec2i a, Vec2i b, Vec2i c, Col color)
+void RenderSurface::rastorize(glm::vec4 v[3], Col c[3])
 {
-    line(a, b, color);
-    line(b, c, color);
-    line(c, a, color);
-}
+    glm::vec4 normalized[3]{
+        v[0] / v[0].w,
+        v[1] / v[1].w,
+        v[2] / v[2].w
+    };
+    glm::vec2 screen[3]{
+        glm::vec2(m_Viewport * normalized[0]),
+        glm::vec2(m_Viewport * normalized[1]),
+        glm::vec2(m_Viewport * normalized[2])
+    };
 
-void RenderSurface::triangleScanline(Vec2i a, Vec2i b, Vec2i c, Col color)
-{
-    if (a.y() > b.y()) std::swap(a, b);
-    if (b.y() > c.y()) std::swap(b, c);
-    if (a.y() > b.y()) std::swap(a, b);
-
-    int32_t totalHeight = c.y() - a.y();
-
-    if (a.y() != b.y())
-    {
-        int32_t segmentHeight = b.y() - a.y();
-        for (int32_t y = a.y(); y < b.y(); ++y)
-        {
-            int32_t x1 = a.x() + ((c.x() - a.x()) * (y - a.y())) / totalHeight;
-            int32_t x2 = a.x() + ((b.x() - a.x()) * (y - a.y())) / segmentHeight;
-            m_PixelGrid.putHorizontalLine(y, std::min(x1, x2), std::max(x1, x2), color);
-        }
-    }
-
-    if (b.y() != c.y())
-    {
-        int32_t segmentHeight = c.y() - b.y();
-        for (int32_t y = b.y(); y <= c.y(); ++y)
-        {
-            int32_t x1 = a.x() + ((c.x() - a.x()) * (y - a.y())) / totalHeight;
-            int32_t x2 = b.x() + ((c.x() - b.x()) * (y - b.y())) / segmentHeight;
-            m_PixelGrid.putHorizontalLine(y, std::min(x1, x2), std::max(x1, x2), color);
-        }
-    }
-}
-
-static float triangleArea(Vec2i a, Vec2i b, Vec2i c)
-{
-    return ((b.y() - a.y()) * (b.x() + a.x()) + (c.y() - b.y()) * (c.x() + b.x()) + (a.y() - c.y()) * (a.x() + c.x())) / 2.0f;
-}
-
-void RenderSurface::trianglePixelCheck(Vec3i a, Vec3i b, Vec3i c, Col cA, Col cB, Col cC)
-{
-    const int32_t top = std::max(0, std::min(a.y(), std::min(b.y(), c.y())));
-    const int32_t left = std::max(0, std::min(a.x(), std::min(b.x(), c.x())));
-    const int32_t bottom = std::min(m_PixelGrid.height() - 1, std::max(a.y(), std::max(b.y(), c.y())));
-    const int32_t right = std::min(m_PixelGrid.width() - 1, std::max(a.x(), std::max(b.x(), c.x())));
-
-    const Vec2i iA(a);
-    const Vec2i iB(b);
-    const Vec2i iC(c);
-    const float totalArea = triangleArea(iA, iB, iC);
-    if (totalArea < 1.0f) return;// That's culling
+    auto [left, right] = std::minmax({screen[0].x, screen[1].x, screen[2].x});
+    auto [top, bottom] = std::minmax({screen[0].y, screen[1].y, screen[2].y});
+    
+    glm::mat3 ABC({
+        {screen[0].x, screen[1].x, screen[2].x},
+        {screen[0].y, screen[1].y, screen[2].y},
+        {1.0f, 1.0f, 1.0f}
+    });
+    if (glm::determinant(ABC) < 1.0f) return;// That's culling
 
     for (int32_t y = top; y <= bottom; ++y) for (int32_t x = left; x <= right; ++x)
     {
-        const Vec2i point(x, y);
-        const float areaA = triangleArea(point, iB, iC) / totalArea;
-        const float areaB = triangleArea(point, iC, iA) / totalArea;
-        const float areaC = triangleArea(point, iA, iB) / totalArea;
+        const glm::fvec3 barycentric = glm::transpose(glm::inverse(ABC)) * glm::fvec3(x, y, 1.0f);
+        if (barycentric.x < 0 || barycentric.y < 0 || barycentric.z < 0) continue;
 
-        if (areaA < 0 || areaB < 0 || areaC < 0) continue;
-
-        float depth = a.z() * areaA + b.z() * areaB + c.z() * areaC;
-        if (depth < m_ZBuffer.at(point)) continue;
+        float depth = glm::dot(barycentric, glm::fvec3(normalized[0].z, normalized[1].z, normalized[2].z));
+        if (!m_ZBuffer.depthTest(x, y, depth)) continue;
 
         m_PixelGrid.put(
-            point,
-            Col(
-                (cA.r * areaA + cB.r * areaB + cC.r * areaC),
-                (cA.g * areaA + cB.g * areaB + cC.g * areaC),
-                (cA.b * areaA + cB.b * areaB + cC.b * areaC)
-            )
+            x, y,
+            Colors::Purple
         );
-
-        m_ZBuffer.at(point) = depth;
     }
 }
 
-Vec3f RenderSurface::project(Vec3f vertice)
+void RenderSurface::renderModel(const Model& model)
 {
-    return Vec3f(
-        (vertice.x() + 1.0f) * m_PixelGrid.width() / 2.0f,
-        (vertice.y() + 1.0f) * m_PixelGrid.height() / 2.0f,
-        (vertice.z() + 1.0f) * 255.0f / 2.0f
-    );
-}
-
-static Vec3f perspective(Vec3f vertice)
-{
-    constexpr float c = 3;
-    return vertice / (1.0f - vertice.z() / c);
-}
-
-static Vec3f rotate(Vec3f vertice, float angle = 0)
-{;
-    Mat3 rot{
-        {{std::cos(angle), 0, std::sin(angle)},
-        {0,1,0},
-        {-std::sin(angle), 0, std::cos(angle)}}
-    };
-    return rot * vertice;
-}
-
-void RenderSurface::renderModel(const Model& model, float angle)
-{
-    Random rD;
-
-    const int32_t faces = model.faces();
-    for (int32_t i = 0; i < faces; ++i)
+    const size_t faces = model.faces();
+    for (size_t i = 0; i < faces; ++i)
     {
         auto face = model.face(i);
-        trianglePixelCheck(
-            Vec3i(project(perspective(rotate(model.vertice(face.x()), angle)))),
-            Vec3i(project(perspective(rotate(model.vertice(face.y()), angle)))),
-            Vec3i(project(perspective(rotate(model.vertice(face.z()), angle)))),
+        glm::vec4 vertices[3]{
+            m_Perspective * m_ModelView * glm::vec4(model.vertice(face.x), 1),
+            m_Perspective * m_ModelView * glm::vec4(model.vertice(face.y), 1),
+            m_Perspective * m_ModelView * glm::vec4(model.vertice(face.z), 1)
+        };
+        Col colors[3]{
             Colors::Red,
             Colors::Green,
             Colors::Blue
-        );
+        };
+
+        rastorize(vertices, colors);
     }
 }

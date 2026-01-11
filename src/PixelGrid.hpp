@@ -4,6 +4,8 @@
 #include <string_view>
 #include <cstdint>
 
+#include "glm.hpp"
+
 #include "Core.hpp"
 
 class PixelGrid
@@ -23,10 +25,10 @@ public:
 	int32_t height() const { return m_Height; }
 	uint8_t* data() { return m_Pixels.data(); };
 	void put(int32_t x, int32_t y, Col color = Colors::White);
-	void put(Vec2i pos, Col color = Colors::White) { put(pos.x(), pos.y(), color); }
+	void put(glm::vec2 pos, Col color = Colors::White) { put(pos.x, pos.y, color); }
 	void putHorizontalLine(int32_t y, int32_t firstX, int32_t lastX, Col color = Colors::White);
 	Col get(int32_t x, int32_t y);
-	Col get(Vec2i pos) { return get(pos.x(), pos.y()); }
+	Col get(glm::vec2 pos) { return get(pos.x, pos.y); }
 
 private:
 

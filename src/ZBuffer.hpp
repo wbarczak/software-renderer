@@ -3,6 +3,9 @@
 #include <vector>
 #include <cstdint>
 #include <limits>
+
+#include "glm.hpp"
+
 #include "PixelGrid.hpp"
 
 class ZBuffer
@@ -14,10 +17,8 @@ public:
 		m_Width(width),
 		m_Height(height) {}
 
-	float& at(size_t x, size_t y) { return m_Depth[((m_Height - 1 - y) * m_Width + x)]; }
-	float& at(Vec2i pos) { return at(pos.x(), pos.y()); }
-	const float& at(size_t x, size_t y) const { return m_Depth[((m_Height - 1 - y) * m_Width + x)]; }
-	const float& at(Vec2i pos) const { return at(pos.x(), pos.y()); }
+	bool depthTest(int32_t x, int32_t y, float depth);
+	bool depthTest(glm::vec2 pos, float depth) { return depthTest(pos.x, pos.y, depth); }
 
 	void clear();
 	PixelGrid getVisual() const;

@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <cstdint>
+#include <cassert>
 
 #include "Col.hpp"
 

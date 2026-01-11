@@ -1,5 +1,19 @@
 #include "ZBuffer.hpp"
 
+#include <iostream>
+
+bool ZBuffer::depthTest(int32_t x, int32_t y, float depth)
+{
+	int32_t testPoint = y * m_Width + x;
+
+	if (testPoint > m_Height * m_Width || testPoint < 0) return false;
+
+	if (m_Depth[testPoint] > depth) return false;
+
+	m_Depth[testPoint] = depth;
+	return true;
+}
+
 void ZBuffer::clear()
 {
 	const size_t bufferSize = m_Width * m_Height;
@@ -10,12 +24,12 @@ void ZBuffer::clear()
 PixelGrid ZBuffer::getVisual() const
 {
 	const size_t bufferSize = m_Width * m_Height;
-	float maximum = 0.0f;
+	float minimum = 0;
 	for (size_t i = 0; i < bufferSize; ++i)
 	{
-		if (m_Depth[i] == std::numeric_limits<float>::max()) continue;
+		if (m_Depth[i] == -std::numeric_limits<float>::max()) continue;
 
-		maximum = std::max(m_Depth[i], maximum);
+		minimum = std::min(m_Depth[i], minimum);
 	}
 
 	PixelGrid out(m_Width, m_Height);
@@ -23,7 +37,8 @@ PixelGrid ZBuffer::getVisual() const
 	{
 		for (size_t x = 0; x < m_Width; ++x)
 		{
-			uint8_t value = m_Depth[(m_Height - 1 - y) * m_Width + x] / maximum * 255;
+			uint8_t value = m_Depth[y * m_Width + x] / minimum * 255;
+
 			out.put(x, y,
 				Col(value, value, value)
 			);
