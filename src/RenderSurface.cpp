@@ -25,8 +25,8 @@ void RenderSurface::setPerspective(float f)
     m_Perspective = {
         {1.0f, 0.0f, 0.0f, 0.0f},
         {0.0f, 1.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 1.0f, 0.0f},
-        {0.0f, 0.0f, -1.0f / f, 1.0f}
+        {0.0f, 0.0f, 1.0f, -1.0f / f},
+        {0.0f, 0.0f, 0.0f, 1.0f}
     };
 }
 
@@ -101,7 +101,7 @@ void RenderSurface::rastorize(glm::vec4 v[3], Col c[3])
 
     for (int32_t y = top; y <= bottom; ++y) for (int32_t x = left; x <= right; ++x)
     {
-        const glm::fvec3 barycentric = glm::transpose(glm::inverse(ABC)) * glm::fvec3(x, y, 1.0f);
+        const glm::vec3 barycentric = glm::transpose(glm::inverse(ABC)) * glm::vec3(x, y, 1.0f);
         if (barycentric.x < 0 || barycentric.y < 0 || barycentric.z < 0) continue;
 
         float depth = glm::dot(barycentric, glm::fvec3(normalized[0].z, normalized[1].z, normalized[2].z));
@@ -109,13 +109,19 @@ void RenderSurface::rastorize(glm::vec4 v[3], Col c[3])
 
         m_PixelGrid.put(
             x, y,
-            Colors::Purple
+            Col(
+                c[0].r * barycentric.x + c[1].r * barycentric.y + c[2].r * barycentric.z,
+                c[0].g * barycentric.x + c[1].g * barycentric.y + c[2].g * barycentric.z,
+                c[0].b * barycentric.x + c[1].b * barycentric.y + c[2].b * barycentric.z
+            )
         );
     }
 }
 
 void RenderSurface::renderModel(const Model& model)
 {
+    Random rD;
+
     const size_t faces = model.faces();
     for (size_t i = 0; i < faces; ++i)
     {
@@ -126,9 +132,9 @@ void RenderSurface::renderModel(const Model& model)
             m_Perspective * m_ModelView * glm::vec4(model.vertice(face.z), 1)
         };
         Col colors[3]{
-            Colors::Red,
-            Colors::Green,
-            Colors::Blue
+            rD.randomColor(),
+            rD.randomColor(),
+            rD.randomColor()
         };
 
         rastorize(vertices, colors);

@@ -24,7 +24,7 @@ int32_t main()
 	mfb_window* window = mfb_open_ex("Software Renderer", width, height, 0);
 
 	float dir = 1.0f;
-	bool showZBuffer = true;
+	bool showZBuffer = false;
 	mfb_set_keyboard_callback([&dir, &showZBuffer](mfb_window* window, mfb_key key, mfb_key_mod mod, bool isPressed){
 		switch (key)
 		{
