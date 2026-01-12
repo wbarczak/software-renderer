@@ -6,9 +6,9 @@
 #include "RenderSurface.hpp"
 #include "Model.hpp"
 
-RenderSurface::RenderSurface(int32_t width, int32_t height, Col backgroundColor) :
+RenderSurface::RenderSurface(int32_t width, int32_t height, float maxDepth, Col backgroundColor) :
     m_PixelGrid(width, height, backgroundColor),
-    m_ZBuffer(width, height) {}
+    m_ZBuffer(width, height, maxDepth) {}
 
 void RenderSurface::setViewport(int32_t x, int32_t y, int32_t w, int32_t h)
 {
@@ -76,7 +76,7 @@ void RenderSurface::line(glm::vec2 a, glm::vec2 b, Col color)
     }
 }
 
-void RenderSurface::rastorize(glm::vec4 v[3], Col c[3], const std::function<Col(glm::vec3, Col[3])>& fragment)
+void RenderSurface::rastorize(glm::vec4 v[3], Col c[3], Shader* shader)
 {
     glm::vec4 normalized[3]{
         v[0] / v[0].w,
@@ -109,15 +109,13 @@ void RenderSurface::rastorize(glm::vec4 v[3], Col c[3], const std::function<Col(
 
         m_PixelGrid.put(
             x, y,
-            fragment(barycentric, c)
+            shader->fragment(barycentric, c)
         );
     }
 }
 
-void RenderSurface::renderModel(const Model& model)
+void RenderSurface::renderModel(Model& model)
 {
-    Random rD;
-
     const size_t faces = model.faces();
     for (size_t i = 0; i < faces; ++i)
     {
@@ -128,10 +126,14 @@ void RenderSurface::renderModel(const Model& model)
             m_Perspective * m_ModelView * glm::vec4(model.vertice(face.z), 1)
         };
         Col colors[3]{
-            rD.randomColor(),
-            rD.randomColor(),
-            rD.randomColor()
+            Colors::Red,
+            Colors::Red,
+            Colors::Red
         };
+        ShadowShader* shader = dynamic_cast<ShadowShader*>(model.getFragment());
+        shader->tri[0] = model.vertice(face.x);
+        shader->tri[1] = model.vertice(face.y);
+        shader->tri[2] = model.vertice(face.z);
 
         rastorize(vertices, colors, model.getFragment());
     }

@@ -1,10 +1,13 @@
 #include <cstdlib>
 #include <iostream>
 #include <numbers>
+
 #include "MiniFB_cpp.h"
+
 #include "Core.hpp"
 #include "Model.hpp"
 #include "RenderSurface.hpp"
+#include "Shader.hpp"
 
 int32_t main()
 {
@@ -19,20 +22,14 @@ int32_t main()
 	buffer.setPerspective(glm::length(eye - center));
 	buffer.setViewport(width / 16, height / 16, width * 7 / 8, height * 7 / 8);
 	
-	Model model("diablo3_pose.obj", [](glm::vec3 bar, Col c[3]) -> Col {
-		return Col(
-			c[0].r * bar.x + c[1].r * bar.y + c[2].r * bar.z,
-			c[0].g * bar.x + c[1].g * bar.y + c[2].g * bar.z,
-			c[0].b * bar.x + c[1].b * bar.y + c[2].b * bar.z
-		);
-	});
+	ShadowShader shader{};
+	Model model("diablo3_pose.obj", &shader);
 
 	mfb_window* window = mfb_open_ex("Software Renderer", width, height, 0);
 
-	float dir = 1.0f;
-	bool showZBuffer = false;
+	float dir = 0.0f;
 	float speed = 2.0f;
-	mfb_set_keyboard_callback([&dir, &showZBuffer, &speed](mfb_window* window, mfb_key key, mfb_key_mod mod, bool isPressed){
+	mfb_set_keyboard_callback([&dir, &speed](mfb_window* window, mfb_key key, mfb_key_mod mod, bool isPressed){
 		switch (key)
 		{
 		case KB_KEY_ESCAPE:
@@ -48,12 +45,6 @@ int32_t main()
 			return;
 		case KB_KEY_SPACE:
 			dir = 0.0f;
-			return;
-		case KB_KEY_Z:
-			showZBuffer = true;
-			return;
-		case KB_KEY_P:
-			showZBuffer = false;
 			return;
 		case KB_KEY_1:
 			speed = 0.5f;
@@ -85,18 +76,10 @@ int32_t main()
 		float frametime = clock.restart();
 		angle += dir * speed * frametime * std::numbers::pi * 2.0f / secondsPerSpin;
 		buffer.setLookat(glm::vec3(cosf(angle), 0.0f, sinf(angle)), center, up);
+		shader.l = glm::vec3(cosf(angle - 0.75f), 0.0f, sinf(angle - 0.75f));
 		buffer.renderModel(model);
 
-		int32_t state;
-		if (showZBuffer)
-		{
-			auto zBuffer = buffer.visualizeZBuffer();
-			state = mfb_update_ex(window, zBuffer.data(), width, height);
-		}
-		else
-		{
-			state = mfb_update_ex(window, buffer.data(), width, height);
-		}
+		int32_t state = mfb_update_ex(window, buffer.data(), width, height);
 
 		++frames;
 

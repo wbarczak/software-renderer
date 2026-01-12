@@ -12,20 +12,21 @@ class ZBuffer
 {
 public:
 	
-	ZBuffer(int32_t width, int32_t height) :
-		m_Depth(width * height, -std::numeric_limits<float>::max()),
+	ZBuffer(int32_t width, int32_t height, float maxDepth = -1000.0f) :
+		m_Depth(width * height, maxDepth),
 		m_Width(width),
-		m_Height(height) {}
+		m_Height(height),
+		m_MaxDepth(maxDepth) {}
 
 	bool depthTest(int32_t x, int32_t y, float depth);
 	bool depthTest(glm::vec2 pos, float depth) { return depthTest(pos.x, pos.y, depth); }
 
 	void clear();
-	PixelGrid getVisual() const;
 
 private:
 
 	std::vector<float> m_Depth;
 	int32_t m_Width;
 	int32_t m_Height;
+	float m_MaxDepth;
 };

@@ -5,12 +5,14 @@
 
 #include "glm.hpp"
 
+#include "Shader.hpp"
+
 class Model
 {
 public:
 
-	Model(const char* path, std::function<Col(glm::vec3, Col[3])>&& fragmentShader) :
-        m_FragmentShader(std::move(fragmentShader))
+	Model(const char* path, Shader* shader) :
+        m_Shader(shader)
 	{
 		std::fstream file(path);
 
@@ -46,14 +48,14 @@ public:
     int32_t vertices() const { return m_Vertices.size(); }
     int32_t faces() const { return m_Faces.size(); }
 
-    glm::fvec3 vertice(int32_t i) const { return m_Vertices[i]; }
+    glm::vec3 vertice(int32_t i) const { return m_Vertices[i]; }
     glm::ivec3 face(int32_t i) const { return m_Faces[i]; }
 
-    const std::function<Col(glm::vec3 barycentric, Col color[3])>& getFragment() const { return m_FragmentShader; }
+    Shader* getFragment() { return m_Shader; }
 
 private:
 
-	std::vector<glm::fvec3> m_Vertices;
+	std::vector<glm::vec3> m_Vertices;
 	std::vector<glm::ivec3> m_Faces;
-    std::function<Col(glm::vec3, Col[3])> m_FragmentShader;
+    Shader* m_Shader;
 };
