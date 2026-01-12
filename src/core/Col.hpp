@@ -11,7 +11,7 @@ struct Col
 	uint8_t r;
 	uint8_t a;
 
-	constexpr Col(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) :
+	constexpr Col(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0, uint8_t a = 255) :
 		r(r), g(g), b(b), a(a) {}
 	constexpr Col(uint8_t* bgra) :
 		b(bgra[0]), g(bgra[1]), r(bgra[2]), a(bgra[3]) {}

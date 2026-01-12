@@ -22,14 +22,23 @@ int32_t main()
 	buffer.setPerspective(glm::length(eye - center));
 	buffer.setViewport(width / 16, height / 16, width * 7 / 8, height * 7 / 8);
 	
-	ShadowShader shader{};
-	Model model("diablo3_pose.obj", &shader);
+	LambertLighting shadowShader{};
+	shadowShader.c[0] = Colors::Purple;
+	shadowShader.c[1] = Colors::LightBlue;
+	shadowShader.c[2] = Colors::Blue;
+
+	ColorShader normalShader{};
+	normalShader.c[0] = Colors::Purple;
+	normalShader.c[1] = Colors::LightBlue;
+	normalShader.c[2] = Colors::Blue;
+
+	Model model("diablo3_pose.obj", &normalShader);
 
 	mfb_window* window = mfb_open_ex("Software Renderer", width, height, 0);
 
 	float dir = 0.0f;
 	float speed = 2.0f;
-	mfb_set_keyboard_callback([&dir, &speed](mfb_window* window, mfb_key key, mfb_key_mod mod, bool isPressed){
+	mfb_set_keyboard_callback([&](mfb_window* window, mfb_key key, mfb_key_mod mod, bool isPressed){
 		switch (key)
 		{
 		case KB_KEY_ESCAPE:
@@ -61,6 +70,12 @@ int32_t main()
 		case KB_KEY_5:
 			speed = 8.0f;
 			return;
+		case KB_KEY_Z:
+			model.setShader(&shadowShader);
+			return;
+		case KB_KEY_X:
+			model.setShader(&normalShader);
+			return;
 		}
 	}, window);
 
@@ -76,7 +91,7 @@ int32_t main()
 		float frametime = clock.restart();
 		angle += dir * speed * frametime * std::numbers::pi * 2.0f / secondsPerSpin;
 		buffer.setLookat(glm::vec3(cosf(angle), 0.0f, sinf(angle)), center, up);
-		shader.l = glm::vec3(cosf(angle - 0.75f), 0.0f, sinf(angle - 0.75f));
+		shadowShader.l = glm::vec3(cosf(angle - 0.75f), 0.0f, sinf(angle - 0.75f));
 		buffer.renderModel(model);
 
 		int32_t state = mfb_update_ex(window, buffer.data(), width, height);

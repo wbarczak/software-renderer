@@ -51,11 +51,12 @@ public:
     glm::vec3 vertice(int32_t i) const { return m_Vertices[i]; }
     glm::ivec3 face(int32_t i) const { return m_Faces[i]; }
 
-    Shader* getFragment() { return m_Shader; }
+    Shader* getShader() const { return m_Shader; }
+    void setShader(Shader* s) const { m_Shader = s; }
 
 private:
 
 	std::vector<glm::vec3> m_Vertices;
 	std::vector<glm::ivec3> m_Faces;
-    Shader* m_Shader;
+    mutable Shader* m_Shader;
 };

@@ -9,14 +9,32 @@
 
 struct Shader
 {
+	glm::mat4 M, P;
+	Col c[3];
+	glm::vec3 tri[3];
+
+	Shader() = default;
 	virtual ~Shader() = default;
-	virtual Col fragment(glm::vec3 barycentric, Col colors[3]) = 0;
+	virtual Col fragment(glm::vec3 barycentric) = 0;
+	virtual glm::vec4 vertex(glm::vec3 v, size_t i) = 0;
 };
 
-struct BaseShader : Shader
+struct BasicVertex : Shader
 {
-	virtual ~BaseShader() = default;
-	virtual Col fragment(glm::vec3 bar, Col c[3]) override
+	BasicVertex() = default;
+	virtual ~BasicVertex() = default;
+	virtual glm::vec4 vertex(glm::vec3 v, size_t i) override
+	{
+		tri[i] = v;
+		return P * M * glm::vec4(v, 1.0f);
+	}
+};
+
+struct ColorShader : BasicVertex
+{
+	ColorShader() = default;
+	virtual ~ColorShader() = default;
+	virtual Col fragment(glm::vec3 bar) override
 	{
 		return Col(
 			c[0].r * bar.x + c[1].r * bar.y + c[2].r * bar.z,
@@ -26,16 +44,20 @@ struct BaseShader : Shader
 	}
 };
 
-struct ShadowShader : Shader
+struct LambertLighting : BasicVertex
 {
-	glm::vec3 tri[3];
 	glm::vec3 l;
 
-	virtual ~ShadowShader() = default;
-	virtual Col fragment(glm::vec3 bar, Col c[3]) override
+	LambertLighting() = default;
+	virtual ~LambertLighting() = default;
+	virtual Col fragment(glm::vec3 bar) override
 	{
 		glm::vec3 facing = glm::normalize(glm::cross(tri[1] - tri[0], tri[2] - tri[0]));
-		uint8_t lightStrength = std::max(0.0f, glm::dot(facing, l)) * 255;
-		return Col(lightStrength, lightStrength, lightStrength);
+		float lightStrength = std::max(0.0f, glm::dot(facing, l));
+		return Col(
+			(c[0].r * bar.x + c[1].r * bar.y + c[2].r * bar.z) * lightStrength,
+			(c[0].g * bar.x + c[1].g * bar.y + c[2].g * bar.z) * lightStrength,
+			(c[0].b * bar.x + c[1].b * bar.y + c[2].b * bar.z) * lightStrength
+		);
 	}
 };

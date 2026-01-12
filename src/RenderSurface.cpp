@@ -76,7 +76,7 @@ void RenderSurface::line(glm::vec2 a, glm::vec2 b, Col color)
     }
 }
 
-void RenderSurface::rastorize(glm::vec4 v[3], Col c[3], Shader* shader)
+void RenderSurface::rastorize(glm::vec4 v[3], Shader* shader)
 {
     glm::vec4 normalized[3]{
         v[0] / v[0].w,
@@ -109,32 +109,28 @@ void RenderSurface::rastorize(glm::vec4 v[3], Col c[3], Shader* shader)
 
         m_PixelGrid.put(
             x, y,
-            shader->fragment(barycentric, c)
+            shader->fragment(barycentric)
         );
     }
 }
 
-void RenderSurface::renderModel(Model& model)
+void RenderSurface::renderModel(const Model& model)
 {
+    Shader* shader = model.getShader();
+    shader->M = m_ModelView;
+    shader->P = m_Perspective;
+    
     const size_t faces = model.faces();
     for (size_t i = 0; i < faces; ++i)
     {
         auto face = model.face(i);
-        glm::vec4 vertices[3]{
-            m_Perspective * m_ModelView * glm::vec4(model.vertice(face.x), 1),
-            m_Perspective * m_ModelView * glm::vec4(model.vertice(face.y), 1),
-            m_Perspective * m_ModelView * glm::vec4(model.vertice(face.z), 1)
-        };
-        Col colors[3]{
-            Colors::Red,
-            Colors::Red,
-            Colors::Red
-        };
-        ShadowShader* shader = dynamic_cast<ShadowShader*>(model.getFragment());
-        shader->tri[0] = model.vertice(face.x);
-        shader->tri[1] = model.vertice(face.y);
-        shader->tri[2] = model.vertice(face.z);
 
-        rastorize(vertices, colors, model.getFragment());
+        glm::vec4 vertices[3]{
+            shader->vertex(model.vertice(face.x), 0),
+            shader->vertex(model.vertice(face.y), 1),
+            shader->vertex(model.vertice(face.z), 2)
+        };
+
+        rastorize(vertices, shader);
     }
 }

@@ -23,12 +23,12 @@ public:
 	void put(glm::vec2 pos, Col color = Colors::White) { m_PixelGrid.put(pos.x, pos.y, color); }
 
 	void line(glm::vec2 a, glm::vec2 b, Col color = Colors::White);
-	void rastorize(glm::vec4 v[3], Col c[3], Shader* shader);
+	void rastorize(glm::vec4 v[3], Shader* shader);
 
 	void savePpm(const char* path) const { m_PixelGrid.savePpm(path); }
 	void savePpmUpsideDown(const char* path) const { m_PixelGrid.savePpmUpsideDown(path); };
 
-	void renderModel(Model& model);
+	void renderModel(const Model& model);
 
 	uint8_t* data() { return m_PixelGrid.data(); }
 
