@@ -21,18 +21,32 @@ int32_t main()
 	buffer.setLookat(eye, center, up);
 	buffer.setPerspective(glm::length(eye - center));
 	buffer.setViewport(width / 16, height / 16, width * 7 / 8, height * 7 / 8);
+
+	constexpr Col colors[3]{
+		Colors::Blue,
+		Colors::LightBlue,
+		Colors::Purple
+	};
 	
 	LambertLighting shadowShader{};
-	shadowShader.c[0] = Colors::Purple;
-	shadowShader.c[1] = Colors::LightBlue;
-	shadowShader.c[2] = Colors::Blue;
+	shadowShader.c[0] = colors[0];
+	shadowShader.c[1] = colors[1];
+	shadowShader.c[2] = colors[2];
 
 	ColorShader normalShader{};
-	normalShader.c[0] = Colors::Purple;
-	normalShader.c[1] = Colors::LightBlue;
-	normalShader.c[2] = Colors::Blue;
+	normalShader.c[0] = colors[0];
+	normalShader.c[1] = colors[1];
+	normalShader.c[2] = colors[2];
 
-	Model model("diablo3_pose.obj", &normalShader);
+	NeatLighting niceShadowShader{};
+	niceShadowShader.c[0] = colors[0];
+	niceShadowShader.c[1] = colors[1];
+	niceShadowShader.c[2] = colors[2];
+	niceShadowShader.ambient = 0.3f;
+
+	DummyShader dummyShader{};
+
+	Model model("diablo3_pose.obj", &niceShadowShader);
 
 	mfb_window* window = mfb_open_ex("Software Renderer", width, height, 0);
 
@@ -71,10 +85,16 @@ int32_t main()
 			speed = 8.0f;
 			return;
 		case KB_KEY_Z:
-			model.setShader(&shadowShader);
+			model.setShader(&normalShader);
 			return;
 		case KB_KEY_X:
-			model.setShader(&normalShader);
+			model.setShader(&shadowShader);
+			return;
+		case KB_KEY_C:
+			model.setShader(&niceShadowShader);
+			return;
+		case KB_KEY_V:
+			model.setShader(&dummyShader);
 			return;
 		}
 	}, window);
@@ -89,9 +109,14 @@ int32_t main()
 
 		constexpr float secondsPerSpin = 6.0f;
 		float frametime = clock.restart();
+
 		angle += dir * speed * frametime * std::numbers::pi * 2.0f / secondsPerSpin;
+
 		buffer.setLookat(glm::vec3(cosf(angle), 0.0f, sinf(angle)), center, up);
 		shadowShader.l = glm::vec3(cosf(angle - 0.75f), 0.0f, sinf(angle - 0.75f));
+		niceShadowShader.l = glm::vec3(buffer.getModelView() * glm::vec4(cosf(angle - 0.75f), 0.0f, sinf(angle - 0.75f), 0.0f));
+		dummyShader.counter = 0;
+
 		buffer.renderModel(model);
 
 		int32_t state = mfb_update_ex(window, buffer.data(), width, height);
@@ -106,6 +131,7 @@ int32_t main()
 	} while (mfb_wait_sync(window));
 
 	std::cout << "Average fps: " << frames / elapsedTime.elapsed() << '\n';
+	std::cout << "Dummy fragment shader calls: " << dummyShader.counter << '\n';
 
 	/*auto filename = "framebuffer.ppm";
 	auto bufferFilename = "framebuffer_z_buffer.ppm";

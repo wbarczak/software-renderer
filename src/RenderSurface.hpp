@@ -30,6 +30,8 @@ public:
 
 	void renderModel(const Model& model);
 
+	const glm::mat4& getModelView() const { return m_ModelView; };
+
 	uint8_t* data() { return m_PixelGrid.data(); }
 
 private:
